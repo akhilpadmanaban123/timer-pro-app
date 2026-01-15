@@ -3,6 +3,7 @@ import { readFileSync } from "fs";
 import express from "express";
 import serveStatic from "serve-static";
 import mongoose from "mongoose";
+import 'dotenv/config';
 
 import shopify from "./shopify.js";
 import GDPRWebhookHandlers from "./gdpr.js";
@@ -111,13 +112,48 @@ app.post("/api/timers", async (req, res) => {
 });
 
 // AI Generation Logic
+
 app.post("/api/ai/generate", async (req, res) => {
   const { intent } = req.body;
-  res.json({
-    title: `AI Suggestion for: ${intent}`,
-    type: "fixed",
-    endDate: "2026-12-31"
-  });
+
+  try {
+    // We use the variables exactly as named in your .env
+    const response = await fetch(`${process.env.OPENAI_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAIROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL_NAME,
+        messages: [
+          {
+            role: "system",
+            content: `You are a Shopify marketing expert. 
+            User wants: "${intent}". 
+            Return ONLY a JSON object: {"title": "Catchy Title", "endDate": "YYYY-MM-DD"}.
+            Calculate endDate to be 3-5 days from today (${new Date().toISOString().split('T')[0]}).`
+          },
+          { role: "user", content: intent }
+        ],
+        response_format: { type: "json_object" }
+      }),
+    });
+
+    const data = await response.json();
+    
+    // OpenRouter returns data in the choices array
+    const aiContent = JSON.parse(data.choices[0].message.content);
+
+    res.json({
+      title: aiContent.title,
+      type: "fixed",
+      endDate: aiContent.endDate
+    });
+  } catch (error) {
+    console.error("AI Assistant Error:", error);
+    res.status(500).json({ error: "AI failed to generate suggestion" });
+  }
 });
 
 // --- SECTION 4: SERVE FRONTEND ---
