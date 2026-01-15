@@ -1,5 +1,6 @@
 <div id="timer-pro-{{ block.id }}" class="timer-banner-pro" style="display: none;">
   <div id="timer-title-{{ block.id }}" class="timer-title-pro">Flash Sale!</div>
+  <div id="timer-description-{{ block.id }}" class="timer-description-pro"></div>
   <div class="timer-grid-pro">
     <div class="time-box-pro"><span id="days-{{ block.id }}" class="val-pro">00</span><span class="label-pro">Days</span></div>
     <div class="time-box-pro"><span id="hrs-{{ block.id }}" class="val-pro">00</span><span class="label-pro">Hrs</span></div>
@@ -32,6 +33,15 @@
     box-shadow: 0 10px 25px rgba(37, 117, 252, 0.3);
   }
 
+  .timer-title-pro {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  .timer-description-pro {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
   .timer-grid-pro { display: flex; justify-content: center; gap: 12px; }
   
   .time-box-pro {
@@ -77,8 +87,10 @@
     container.style.display = "block"
         
         const titleEl = document.getElementById("timer-title-{{ block.id }}");
+        const descriptionEl = document.getElementById("timer-description-{{ block.id }}");
         if (container) container.style.display = "block";
         if (titleEl) titleEl.innerText = data.title;
+        if (descriptionEl) descriptionEl.innerText = data.description;
 
         let targetTime;
 

@@ -14,10 +14,10 @@ export const generateAiSuggestions = async (req, res) => {
     const isUrgent = intent.toLowerCase().includes("flash") || intent.toLowerCase().includes("now");
     
     const suggestion = {
-      title: `${intent.toUpperCase()} - ${productTitle}`,
+      title: `${intent.toUpperCase()}`,
       type: isUrgent ? "evergreen" : "fixed", // Suggests type based on intent [cite: 72]
       duration: isUrgent ? 60 : 1440, // Minutes [cite: 73]
-      copy: `Limited time ${intent}! Grab yours now.`, // Urgency copy [cite: 74]
+      description: `Limited time ${intent}! Grab yours now.`, // Urgency copy [cite: 74]
       color: isUrgent ? "#FF0000" : "#000000",
       suggestedByAl: true // Must be clearly marked [cite: 80]
     };

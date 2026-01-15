@@ -2,7 +2,6 @@ import { BrowserRouter } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { NavMenu } from "@shopify/app-bridge-react";
 import Routes from "./Routes";
-import NewTimer from "./pages/new";
 
 import { QueryProvider, PolarisProvider } from "./components";
 

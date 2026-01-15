@@ -8,6 +8,7 @@ export default function NewTimer() {
   const fetch = useAuthenticatedFetch();
   
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [type, setType] = useState("fixed");
   const [endDate, setEndDate] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -26,6 +27,7 @@ export default function NewTimer() {
       if (response.ok) {
         const suggestion = await response.json();
         setTitle(suggestion.title || "");
+        setDescription(suggestion.description || "");
         setType(suggestion.type || "fixed");
         setEndDate(suggestion.endDate || "");
       }
@@ -53,6 +55,7 @@ export default function NewTimer() {
   // LOGIC: Ensure we capture the 'type' state correctly
   const timerData = {
     title: title,
+    description: description,
     type: type, // This must be 'evergreen' or 'fixed'
     // If evergreen, we send the duration (e.g. "30") as the endDate string
     endDate: type === 'evergreen' ? duration : endDate, 
@@ -88,6 +91,7 @@ export default function NewTimer() {
           <Card sectioned>
             <FormLayout>
               <TextField label="Timer Name" value={title} onChange={setTitle} autoComplete="off" />
+              <TextField label="Description" value={description} onChange={setDescription} autoComplete="off" />
               
   <Select
   label="Timer Type"

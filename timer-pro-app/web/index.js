@@ -28,6 +28,7 @@ app.get("/api/proxy", async (req, res) => {
   try {
     const { shop, product_id } = req.query;
     
+    console.log(">>> [proxy] Received query for shop:", shop, "and product_id:", product_id);
     let query;
     // If no product_id (Home Page), look for a timer with targetType 'all'
     if (!product_id || product_id === "global_home_page" || product_id === "") {
@@ -36,17 +37,22 @@ app.get("/api/proxy", async (req, res) => {
       query = { shop: shop, targetIds: { $in: [product_id, `gid://shopify/Product/${product_id}`] } };
     }
 
+    console.log(">>> [proxy] Mongoose query:", query);
+
     const activeTimer = await Timer.findOneAndUpdate(
       query,
       { $inc: { "analytics.impressions": 1 } },
       { new: true }
     );
 
+    console.log(">>> [proxy] Found timer:", activeTimer);
+    res.setHeader('Cache-Control', 'public, max-age=60');
     if (!activeTimer) return res.json({ active: false });
 
     res.json({
       active: true,
       title: activeTimer.title,
+      description: activeTimer.description,
       endDate: activeTimer.endDate,
       type: activeTimer.type
     });
@@ -77,9 +83,18 @@ app.use(express.json());
 app.get("/api/timers", async (req, res) => {
   try {
     const shop = res.locals.shopify.session.shop;
-    // We fetch all timers for this shop and sort by newest first
-    const timers = await Timer.find({ shop }).sort({ createdAt: -1 });
-    res.status(200).json(timers);
+    const { page = 1, limit = 10 } = req.query;
+    const skip = (page - 1) * limit;
+
+    // We fetch a paginated list of timers for this shop and sort by newest first
+    const timers = await Timer.find({ shop })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+      
+    const total = await Timer.countDocuments({ shop });
+
+    res.status(200).json({ timers, total });
   } catch (error) {
     console.error(">>> Backend Fetch Error:", error.message);
     res.status(500).json({ error: error.message });
@@ -91,13 +106,14 @@ app.get("/api/timers", async (req, res) => {
 app.post("/api/timers", async (req, res) => {
   try {
     const shop = res.locals.shopify.session.shop;
-    const { title, type, endDate, targetType, targetIds } = req.body;
+    const { title, description, type, endDate, targetType, targetIds } = req.body;
 
-    console.log(">>> Backend received timer data:", { title, type, endDate, targetType });
+    console.log(">>> Backend received timer data:", { title, description, type, endDate, targetType });
 
     const timer = new Timer({
       shop,
       title,
+      description,
       type: type || 'fixed', 
       endDate, // This stores the Date string OR the Evergreen Minutes
       targetType,
@@ -172,7 +188,7 @@ app.post("/api/ai/generate", async (req, res) => {
             role: "system",
             content: `You are a Shopify marketing expert. 
             User wants: "${intent}". 
-            Return ONLY a JSON object: {"title": "Catchy Title", "endDate": "YYYY-MM-DD"}.
+            Return ONLY a JSON object: {"title": "Catchy Title", "description": "Compelling description.", "endDate": "YYYY-MM-DD"}.
             Calculate endDate to be 3-5 days from today (${new Date().toISOString().split('T')[0]}).`
           },
           { role: "user", content: intent }
@@ -188,6 +204,7 @@ app.post("/api/ai/generate", async (req, res) => {
 
     res.json({
       title: aiContent.title,
+      description: aiContent.description,
       type: "fixed",
       endDate: aiContent.endDate
     });

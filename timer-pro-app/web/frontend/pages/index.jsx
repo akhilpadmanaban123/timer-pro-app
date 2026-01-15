@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   Page, 
   Layout, 
@@ -9,7 +9,8 @@ import {
   Badge, 
   Button, 
   LegacyStack,
-  EmptyState
+  EmptyState,
+  Pagination
 } from "@shopify/polaris";
 import { useNavigate } from "react-router-dom";
 import { useAuthenticatedFetch } from "../hooks"; 
@@ -19,35 +20,42 @@ export default function HomePage() {
   const fetch = useAuthenticatedFetch(); 
   const [savedTimers, setSavedTimers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [total, setTotal] = useState(0);
 
-  const fetchTimers = async () => {
+  const fetchTimers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/timers");
+      const response = await fetch(`/api/timers?page=${page}&limit=${limit}`);
       if (response.ok) {
-        const data = await response.json();
-        setSavedTimers(data);
+        const { timers, total: totalCount } = await response.json();
+        setSavedTimers(timers);
+        setTotal(totalCount);
       }
     } catch (error) {
       console.error("Error fetching timers:", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, limit]);
 
-  useEffect(() => { fetchTimers(); }, []);
+  useEffect(() => { fetchTimers(); }, [fetchTimers]);
 
   const deleteTimer = async (id) => {
     if (!confirm("Are you sure you want to delete this timer?")) return;
     try {
       const response = await fetch(`/api/timers/${id}`, { method: "DELETE" });
       if (response.ok) {
-        setSavedTimers((prev) => prev.filter((t) => t._id !== id));
+        await fetchTimers(); // Refetch timers after deletion
       }
     } catch (error) {
       console.error("Error deleting timer:", error);
     }
   };
+
+  const hasNext = page * limit < total;
+  const hasPrevious = page > 1;
 
   return (
     <Page 
@@ -60,11 +68,7 @@ export default function HomePage() {
     >
       <Layout>
         <Layout.Section>
-          <Card sectioned>
-            <div style={{ marginBottom: '20px' }}>
-              <Text variant="headingMd" as="h2">Active Campaigns</Text>
-            </div>
-            
+          <Card>
             <ResourceList
               loading={isLoading}
               resourceName={{ singular: 'timer', plural: 'timers' }}
@@ -79,12 +83,13 @@ export default function HomePage() {
                 </EmptyState>
               }
 renderItem={(item) => {
-  const { _id, title, endDate, targetIds, analytics, type } = item;
+  const { _id, title, description, endDate, targetIds, analytics, type } = item;
   return (
     <ResourceItem id={_id}>
       <LegacyStack distribution="equalSpacing" alignment="center">
         <LegacyStack vertical spacing="extraTight">
   <Text variant="bodyMd" fontWeight="bold">{title}</Text>
+  <Text color="subdued">{description}</Text>
   <LegacyStack spacing="tight">
     {/* Dynamic Badges based on type */}
     <Badge status={type === 'evergreen' ? 'info' : 'attention'}>
@@ -114,6 +119,16 @@ renderItem={(item) => {
   );
 }}
             />
+            <Card sectioned>
+              <LegacyStack distribution="center">
+                <Pagination
+                  hasPrevious={hasPrevious}
+                  onPrevious={() => setPage(p => p - 1)}
+                  hasNext={hasNext}
+                  onNext={() => setPage(p => p + 1)}
+                />
+              </LegacyStack>
+            </Card>
           </Card>
         </Layout.Section>
       </Layout>
