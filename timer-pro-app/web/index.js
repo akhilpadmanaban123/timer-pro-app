@@ -25,6 +25,25 @@ const STATIC_PATH = process.env.NODE_ENV === "production"
 
 const app = express();
 
+// Delete a specific timer by ID
+app.delete("/api/timers/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const shop = res.locals.shopify.session.shop;
+
+    // Ensure we only delete timers belonging to the current shop
+    const deletedTimer = await Timer.findOneAndDelete({ _id: id, shop: shop });
+
+    if (!deletedTimer) {
+      return res.status(404).json({ error: "Timer not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Timer deleted" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 1. Move Proxy HERE (Above the authentication middleware)
 app.get("/api/proxy", async (req, res) => {
   try {
@@ -56,8 +75,27 @@ app.use(express.json());
 app.get("/api/timers", async (req, res) => {
   try {
     const shop = res.locals.shopify.session.shop;
-    const timers = await Timer.find({ shop });
+    const timers = await Timer.find({ shop }).sort({ createdAt: -1 });
     res.status(200).json(timers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 2. Save/Update Timer
+app.post("/api/timers", async (req, res) => {
+  try {
+    const shop = res.locals.shopify.session.shop;
+    const { title, endDate, targetIds } = req.body;
+
+    // Use findOneAndUpdate so we can "Edit" if the title matches, or create new
+    const timer = await Timer.findOneAndUpdate(
+      { shop, title }, 
+      { endDate, targetIds, shop },
+      { upsert: true, new: true }
+    );
+
+    res.status(201).json({ success: true, timer });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
