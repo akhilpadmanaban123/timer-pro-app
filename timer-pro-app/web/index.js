@@ -22,28 +22,36 @@ const STATIC_PATH = process.env.NODE_ENV === "production"
 
 const app = express();
 
-// --- SECTION 1: PUBLIC ROUTES ---
-// These do NOT require a Shopify Admin session
+// web/index.js
 
 app.get("/api/proxy", async (req, res) => {
   try {
     const { shop, product_id } = req.query;
-    const idVariants = [product_id, `gid://shopify/Product/${product_id}`];
+    
+    let query;
+    // If no product_id (Home Page), look for a timer with targetType 'all'
+    if (!product_id || product_id === "global_home_page" || product_id === "") {
+      query = { shop: shop, targetType: 'all' };
+    } else {
+      query = { shop: shop, targetIds: { $in: [product_id, `gid://shopify/Product/${product_id}`] } };
+    }
 
-    const activeTimer = await Timer.findOne({ 
-      shop: shop,
-      targetIds: { $in: idVariants } 
-    });
+    const activeTimer = await Timer.findOneAndUpdate(
+      query,
+      { $inc: { "analytics.impressions": 1 } },
+      { new: true }
+    );
 
-    if (!activeTimer) return res.status(200).json({ active: false });
+    if (!activeTimer) return res.json({ active: false });
 
-    res.status(200).json({
+    res.json({
       active: true,
       title: activeTimer.title,
       endDate: activeTimer.endDate,
+      type: activeTimer.type
     });
   } catch (error) {
-    res.status(500).send("Internal Server Error");
+    res.status(500).send("Proxy Error");
   }
 });
 
@@ -64,13 +72,46 @@ app.post(
 app.use("/api/*", shopify.validateAuthenticatedSession());
 app.use(express.json());
 
-// Get All Timers for Dashboard
+// 1. GET ROUTE: This is for the Dashboard List
+// This is what index.jsx calls to show the timers
 app.get("/api/timers", async (req, res) => {
   try {
     const shop = res.locals.shopify.session.shop;
+    // We fetch all timers for this shop and sort by newest first
     const timers = await Timer.find({ shop }).sort({ createdAt: -1 });
     res.status(200).json(timers);
   } catch (error) {
+    console.error(">>> Backend Fetch Error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 2. POST ROUTE: This is for Saving New Timers
+// This is what new.jsx calls when you click "Save"
+app.post("/api/timers", async (req, res) => {
+  try {
+    const shop = res.locals.shopify.session.shop;
+    const { title, type, endDate, targetType, targetIds } = req.body;
+
+    console.log(">>> Backend received timer data:", { title, type, endDate, targetType });
+
+    const timer = new Timer({
+      shop,
+      title,
+      type: type || 'fixed', 
+      endDate, // This stores the Date string OR the Evergreen Minutes
+      targetType,
+      targetIds,
+      analytics: { impressions: 0 } 
+    });
+
+    await timer.save();
+    console.log(">>> Timer saved successfully with ID:", timer._id);
+    
+    // Return the newly created timer object
+    res.status(201).json(timer);
+  } catch (error) {
+    console.error(">>> Backend Save Error:", error.message);
     res.status(500).json({ error: error.message });
   }
 });

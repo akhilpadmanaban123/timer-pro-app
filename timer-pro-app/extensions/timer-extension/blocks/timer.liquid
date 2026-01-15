@@ -1,104 +1,149 @@
-<div id="timer-pro-{{ block.id }}" class="timer-pro-wrapper" style="display: none;">
-  <div class="timer-pro-content">
-    <h3 id="timer-title-{{ block.id }}" class="timer-pro-title"></h3>
-    <div class="timer-pro-display">
-      <div class="timer-unit">
-        <span id="days-{{ block.id }}">00</span>
-        <label>Days</label>
-      </div>
-      <div class="timer-unit">
-        <span id="hours-{{ block.id }}">00</span>
-        <label>Hrs</label>
-      </div>
-      <div class="timer-unit">
-        <span id="mins-{{ block.id }}">00</span>
-        <label>Mins</label>
-      </div>
-      <div class="timer-unit">
-        <span id="secs-{{ block.id }}">00</span>
-        <label>Secs</label>
-      </div>
-    </div>
+<div id="timer-pro-{{ block.id }}" class="timer-banner-pro" style="display: none;">
+  <div id="timer-title-{{ block.id }}" class="timer-title-pro">Flash Sale!</div>
+  <div class="timer-grid-pro">
+    <div class="time-box-pro"><span id="days-{{ block.id }}" class="val-pro">00</span><span class="label-pro">Days</span></div>
+    <div class="time-box-pro"><span id="hrs-{{ block.id }}" class="val-pro">00</span><span class="label-pro">Hrs</span></div>
+    <div class="time-box-pro"><span id="mins-{{ block.id }}" class="val-pro">00</span><span class="label-pro">Mins</span></div>
+    <div class="time-box-pro"><span id="secs-{{ block.id }}" class="val-pro">00</span><span class="label-pro">Secs</span></div>
   </div>
 </div>
 
 <style>
-  .timer-pro-wrapper {
-    background: linear-gradient(90deg, #ff4d4d, #c40000);
+  /* Base Layout */
+  .timer-banner-pro {
     color: white;
-    padding: 20px;
-    border-radius: 12px;
-    margin: 20px 0;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    padding: 25px;
+    border-radius: 15px;
     text-align: center;
+    margin: 20px 0;
+    font-family: sans-serif;
+    transition: all 0.3s ease;
   }
-  .timer-pro-title {
-    margin: 0 0 15px 0;
-    font-size: 1.2rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+
+  /* Style 1: Fixed (The "Flash Sale" Look) */
+  .theme-fixed {
+    background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+    box-shadow: 0 10px 25px rgba(255, 8, 68, 0.3);
   }
-  .timer-pro-display {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
+
+  /* Style 2: Evergreen (The "Personalized" Look) */
+  .theme-evergreen {
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    box-shadow: 0 10px 25px rgba(37, 117, 252, 0.3);
   }
-  .timer-unit {
-    display: flex;
-    flex-direction: column;
+
+  .timer-grid-pro { display: flex; justify-content: center; gap: 12px; }
+  
+  .time-box-pro {
     background: rgba(255, 255, 255, 0.2);
-    padding: 10px;
-    border-radius: 8px;
-    min-width: 60px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 12px;
+    border-radius: 10px;
+    min-width: 65px;
   }
-  .timer-unit span {
-    font-size: 1.5rem;
-    font-weight: 800;
+
+  /* Urgency animation for Fixed only */
+  .theme-fixed .time-box-pro {
+    animation: pulse-urgency 2s infinite ease-in-out;
   }
-  .timer-unit label {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    opacity: 0.8;
+
+  @keyframes pulse-urgency {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
   }
 </style>
 
 <script>
   (function() {
-    const productId = "{{ product.id }}";
-    const proxyUrl = "/apps/timer-pro?product_id=" + productId;
+    // 1. Determine if we are on a Product page or Home page
+    const productId = "{{ product.id }}" || "global_home_page";
+    const proxyUrl = `/apps/timer-pro?product_id=${productId}`;
 
     fetch(proxyUrl)
       .then(res => res.json())
       .then(data => {
-        if (data.active) {
-          document.getElementById("timer-pro-{{ block.id }}").style.display = "block";
-          document.getElementById("timer-title-{{ block.id }}").innerText = data.title;
+        // Exit if no active timer found for this context
+        if (!data || !data.active) return;
 
-          const endDate = new Date(data.endDate).getTime();
+        // Show container and set title
+        const container = document.getElementById("timer-pro-{{ block.id }}");
+        if (data.type === 'evergreen') {
+      container.classList.add('theme-evergreen');
+    } else {
+      container.classList.add('theme-fixed');
+    }
+    container.style.display = "block"
+        
+        const titleEl = document.getElementById("timer-title-{{ block.id }}");
+        if (container) container.style.display = "block";
+        if (titleEl) titleEl.innerText = data.title;
 
-          const updateTimer = () => {
-            const now = new Date().getTime();
-            const diff = endDate - now;
+        let targetTime;
 
-            if (diff < 0) return;
+        if (data.type === 'evergreen') {
+          // Requirement 3.3: Individualized session logic
+          const storageKey = `timer_start_${productId}`;
+          let startTime = localStorage.getItem(storageKey);
 
-            document.getElementById("days-{{ block.id }}").innerText = Math.floor(diff / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
-            document.getElementById("hours-{{ block.id }}").innerText = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
-            document.getElementById("mins-{{ block.id }}").innerText = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
-            document.getElementById("secs-{{ block.id }}").innerText = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
+          // If first visit, record the timestamp
+          if (!startTime) {
+            startTime = new Date().getTime().toString();
+            localStorage.setItem(storageKey, startTime);
+          }
+
+          // Convert the stored minutes duration to milliseconds
+          const durationMinutes = parseInt(data.endDate) || 30;
+          targetTime = parseInt(startTime) + (durationMinutes * 60 * 1000);
+        } else {
+          // Fixed logic: Parse the calendar date string
+          targetTime = new Date(data.endDate).getTime();
+        }
+
+        const updateTimer = () => {
+          const now = new Date().getTime();
+          const diff = targetTime - now;
+
+          // Hide banner if timer reaches zero or is invalid
+          if (isNaN(diff) || diff <= 0) {
+            if (container) container.style.display = "none";
+            return;
+          }
+
+          // Math to calculate units
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+          // Update DOM with padded values to prevent layout shift
+          const elements = {
+            "days": days,
+            "hrs": hours,
+            "mins": mins,
+            "secs": secs
           };
 
-          setInterval(updateTimer, 1000);
-          updateTimer();
-        }
-      });
+          for (const [key, value] of Object.entries(elements)) {
+            const el = document.getElementById(`${key}-{{ block.id }}`);
+            if (el) el.innerText = value.toString().padStart(2, '0');
+          }
+        };
+
+        // Initialize and run interval
+        updateTimer();
+        setInterval(updateTimer, 1000);
+      })
+      .catch(err => console.error("Timer failed to load:", err));
   })();
 </script>
-
 {% schema %}
 {
-  "name": "Flash Sale Pro",
-  "target": "section"
+  "name": "Global Flash Sale",
+  "target": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Flash Sale!" }
+  ]
 }
 {% endschema %}

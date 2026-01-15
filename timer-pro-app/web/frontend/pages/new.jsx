@@ -13,6 +13,7 @@ export default function NewTimer() {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [aiIntent, setAiIntent] = useState("");
+  const [duration, setDuration] = useState("30");
 
   // Requirement 4.7: AI Suggestion Flow
   const handleAiGenerate = async () => {
@@ -49,15 +50,18 @@ export default function NewTimer() {
   if (!title) return;
   setIsSaving(true);
 
-  // Prepare the data to match your MongoDB Schema
+  // LOGIC: Ensure we capture the 'type' state correctly
   const timerData = {
     title: title,
-    type: type,
-    endDate: endDate,
+    type: type, // This must be 'evergreen' or 'fixed'
+    // If evergreen, we send the duration (e.g. "30") as the endDate string
+    endDate: type === 'evergreen' ? duration : endDate, 
     targetType: selectedProducts.length > 0 ? 'product' : 'all',
-    // We map through selectedProducts to get just the ID strings
-    targetIds: selectedProducts.map(product => product.id), 
+    targetIds: selectedProducts.map(product => product.id),
+    analytics: { impressions: 0 }
   };
+
+  console.log("Saving Timer Data:", timerData); // Check your console to see if type is 'evergreen'
 
   try {
     const response = await fetch("/api/timers", {
@@ -66,15 +70,10 @@ export default function NewTimer() {
       body: JSON.stringify(timerData),
     });
 
-    if (response.ok) {
-      // If the backend responds with success, we stop the spinner and leave
-      navigate("/");
-    } else {
-      console.error("Failed to save");
-      setIsSaving(false); // Stop spinner so user can try again
-    }
+    if (response.ok) navigate("/");
   } catch (error) {
-    console.error("Network error:", error);
+    console.error("Save error:", error);
+  } finally {
     setIsSaving(false);
   }
 };
@@ -89,17 +88,36 @@ export default function NewTimer() {
           <Card sectioned>
             <FormLayout>
               <TextField label="Timer Name" value={title} onChange={setTitle} autoComplete="off" />
-              <Select
-                label="Timer Type"
-                options={[
-                  {label: 'Fixed (Static Date)', value: 'fixed'},
-                  {label: 'Evergreen (Session-based)', value: 'evergreen'}
-                ]}
-                onChange={setType}
-                value={type}
-              />
-              <TextField label="End Date (YYYY-MM-DD)" value={endDate} onChange={setEndDate} autoComplete="off" placeholder="2026-12-31" />
-              <Button onClick={selectProducts}>
+              
+  <Select
+  label="Timer Type"
+  options={[
+    {label: 'Fixed (Static Date)', value: 'fixed'},
+    {label: 'Evergreen (Session-based)', value: 'evergreen'}
+  ]}
+  // IMPORTANT: Ensure the state 'setType' is actually receiving the value
+  onChange={(selected) => setType(selected)} 
+  value={type}
+/>
+              {type === 'fixed' ? (
+  <TextField 
+    label="End Date (YYYY-MM-DD)" 
+    value={endDate} 
+    onChange={setEndDate} 
+    autoComplete="off" 
+    placeholder="2026-12-31" 
+  />
+) : (
+  <TextField 
+    label="Duration (Minutes)" 
+    type="number"
+    value={duration} 
+    onChange={setDuration} 
+    autoComplete="off" 
+    helpText="Timer starts when a unique customer first visits the product."
+  />
+)}
+<Button onClick={selectProducts}>
                 {selectedProducts.length > 0 ? `Selected ${selectedProducts.length} Products` : "Select Products"}
               </Button>
             </FormLayout>
