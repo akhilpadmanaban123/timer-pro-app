@@ -22,7 +22,7 @@
 | **Backend** | [cite_start]Node.js, Express.js [cite: 110, 188, 191] |
 | **Database** | [cite_start]MongoDB Atlas (Multi-tenant schema) [cite: 33, 34] |
 | **Storefront** | [cite_start]Liquid, JavaScript (Theme App Extension) [cite: 103, 110] |
-| **AI** | [cite_start]OpenRouter API (GPT-4o-mini / 3.5-Turbo) [cite: 53, 97] |
+| **AI** | [cite_start]OpenRouter API (xiaomi/mimo-v2-flash:free) [cite: 53, 97] |
 
 ---
 
