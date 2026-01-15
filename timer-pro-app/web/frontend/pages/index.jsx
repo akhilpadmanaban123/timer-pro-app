@@ -12,18 +12,24 @@ import {
   EmptyState
 } from "@shopify/polaris";
 import { useNavigate } from "react-router-dom";
+// Requirement 5.1: Use authenticated fetch to pass session tokens
+import { useAuthenticatedFetch } from "../hooks"; 
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const fetch = useAuthenticatedFetch(); // Replaces standard browser fetch
   const [savedTimers, setSavedTimers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Fetch all timers from MongoDB on load
+  // 1. Fetch all timers belonging to the current shop
   const fetchTimers = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch("/api/timers");
-      const data = await response.json();
-      setSavedTimers(data);
+      if (response.ok) {
+        const data = await response.json();
+        setSavedTimers(data);
+      }
     } catch (error) {
       console.error("Error fetching timers:", error);
     } finally {
@@ -33,7 +39,7 @@ export default function HomePage() {
 
   useEffect(() => { fetchTimers(); }, []);
 
-  // 2. Delete logic
+  // 2. Delete logic using authenticated request
   const deleteTimer = async (id) => {
     if (!confirm("Are you sure you want to delete this timer?")) return;
 
@@ -44,12 +50,14 @@ export default function HomePage() {
 
       if (response.ok) {
         // UI update: Filter out the deleted timer from state
-        setSavedTimers(savedTimers.filter((t) => t._id !== id));
+        setSavedTimers((prev) => prev.filter((t) => t._id !== id));
       } else {
-        alert("Failed to delete timer. Please try again.");
+        const errorData = await response.json();
+        alert(`Delete failed: ${errorData.error || response.statusText}`);
       }
     } catch (error) {
       console.error("Error deleting timer:", error);
+      alert("Network error while trying to delete.");
     }
   };
 
@@ -57,7 +65,7 @@ export default function HomePage() {
     <Page 
       title="Flash Sale Dashboard"
       primaryAction={
-        <Button primary onClick={() => navigate("/pagename")}>
+        <Button primary onClick={() => navigate("/new")}>
           Create New Timer
         </Button>
       }
@@ -73,7 +81,6 @@ export default function HomePage() {
               loading={isLoading}
               resourceName={{ singular: 'timer', plural: 'timers' }}
               items={savedTimers}
-              // Shows if no timers exist in MongoDB
               emptyState={
                 <EmptyState
                   heading="No timers found"
@@ -88,7 +95,6 @@ export default function HomePage() {
                 return (
                   <ResourceItem id={_id}>
                     <LegacyStack distribution="equalSpacing" alignment="center">
-                      {/* Left Side: Title and Date */}
                       <LegacyStack vertical spacing="extraTight">
                         <Text variant="bodyMd" fontWeight="bold">{title}</Text>
                         <Text color="subdued">
@@ -96,7 +102,6 @@ export default function HomePage() {
                         </Text>
                       </LegacyStack>
                       
-                      {/* Right Side: Badge and Delete Button */}
                       <LegacyStack spacing="tight" alignment="center">
                         <Badge status="info">{targetIds?.length || 0} Products</Badge>
                         <Button 
