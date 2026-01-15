@@ -1,0 +1,55 @@
+{% comment %} 
+  Requirement 5.1: Theme App Extension logic 
+  Requirement 5.4: No sensitive data exposure
+{% endcomment %}
+
+<div id="timer-pro-{{ block.id }}" style="display: block; text-align: center; border: 1px solid red; padding: 10px;">
+  <h3 id="timer-title-{{ block.id }}"></h3>
+  <div id="countdown-{{ block.id }}">00:00:00:00</div>
+</div>
+
+<script>
+  (function() {
+    const productId = "{{ product.id }}";
+    const proxyUrl = "/apps/timer-pro?product_id=" + productId;
+
+    fetch(proxyUrl)
+      .then(res => res.json())
+      .then(data => {
+        if (data.active) {
+          const container = document.getElementById("timer-pro-{{ block.id }}");
+          const title = document.getElementById("timer-title-{{ block.id }}");
+          const countdown = document.getElementById("countdown-{{ block.id }}");
+          
+          container.style.display = "block";
+          title.innerText = data.title;
+
+          const endDate = new Date(data.endDate).getTime();
+
+          const x = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = endDate - now;
+
+            const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((distance % (1000 * 60)) / 1000);
+
+            countdown.innerHTML = d + "d " + h + "h " + m + "m " + s + "s ";
+
+            if (distance < 0) {
+              clearInterval(x);
+              countdown.innerHTML = "EXPIRED";
+            }
+          }, 1000);
+        }
+      });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Timer Pro",
+  "target": "section"
+}
+{% endschema %}

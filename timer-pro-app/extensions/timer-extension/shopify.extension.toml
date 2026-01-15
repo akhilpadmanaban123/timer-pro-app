@@ -1,0 +1,13 @@
+api_version = "2024-01"
+
+# The top-level type MUST be "theme" for Theme App Extensions
+
+uid = "c799be43-2dd5-dc1f-3104-fd19ed1a53ed1a3efb96"
+
+type = "theme"
+name = "timer-extension"
+
+[[blocks]]
+name = "Countdown Timer"
+# This 'type' refers to your liquid file name (timer.liquid)
+type = "timer"

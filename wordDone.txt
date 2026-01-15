@@ -1,0 +1,9 @@
+npm install -g @shopify/cli @shopify/theme  - shopify partner setup
+
+
+
+initializing the project - shopify app init --template https://github.com/Shopify/shopify-app-template-node
+
+cd to folder
+shopify app dev
+
