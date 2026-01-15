@@ -46,7 +46,6 @@ app.get("/api/proxy", async (req, res) => {
     );
 
     console.log(">>> [proxy] Found timer:", activeTimer);
-    res.setHeader('Cache-Control', 'public, max-age=60');
     if (!activeTimer) return res.json({ active: false });
 
     res.json({
