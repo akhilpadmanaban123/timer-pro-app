@@ -1,12 +1,67 @@
-{% comment %} 
-  Requirement 5.1: Theme App Extension logic 
-  Requirement 5.4: No sensitive data exposure
-{% endcomment %}
-
-<div id="timer-pro-{{ block.id }}" style="display: block; text-align: center; border: 1px solid red; padding: 10px;">
-  <h3 id="timer-title-{{ block.id }}"></h3>
-  <div id="countdown-{{ block.id }}">00:00:00:00</div>
+<div id="timer-pro-{{ block.id }}" class="timer-pro-wrapper" style="display: none;">
+  <div class="timer-pro-content">
+    <h3 id="timer-title-{{ block.id }}" class="timer-pro-title"></h3>
+    <div class="timer-pro-display">
+      <div class="timer-unit">
+        <span id="days-{{ block.id }}">00</span>
+        <label>Days</label>
+      </div>
+      <div class="timer-unit">
+        <span id="hours-{{ block.id }}">00</span>
+        <label>Hrs</label>
+      </div>
+      <div class="timer-unit">
+        <span id="mins-{{ block.id }}">00</span>
+        <label>Mins</label>
+      </div>
+      <div class="timer-unit">
+        <span id="secs-{{ block.id }}">00</span>
+        <label>Secs</label>
+      </div>
+    </div>
+  </div>
 </div>
+
+<style>
+  .timer-pro-wrapper {
+    background: linear-gradient(90deg, #ff4d4d, #c40000);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+  .timer-pro-title {
+    margin: 0 0 15px 0;
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .timer-pro-display {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+  .timer-unit {
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 10px;
+    border-radius: 8px;
+    min-width: 60px;
+  }
+  .timer-unit span {
+    font-size: 1.5rem;
+    font-weight: 800;
+  }
+  .timer-unit label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+</style>
 
 <script>
   (function() {
@@ -17,31 +72,25 @@
       .then(res => res.json())
       .then(data => {
         if (data.active) {
-          const container = document.getElementById("timer-pro-{{ block.id }}");
-          const title = document.getElementById("timer-title-{{ block.id }}");
-          const countdown = document.getElementById("countdown-{{ block.id }}");
-          
-          container.style.display = "block";
-          title.innerText = data.title;
+          document.getElementById("timer-pro-{{ block.id }}").style.display = "block";
+          document.getElementById("timer-title-{{ block.id }}").innerText = data.title;
 
           const endDate = new Date(data.endDate).getTime();
 
-          const x = setInterval(function() {
+          const updateTimer = () => {
             const now = new Date().getTime();
-            const distance = endDate - now;
+            const diff = endDate - now;
 
-            const d = Math.floor(distance / (1000 * 60 * 60 * 24));
-            const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((distance % (1000 * 60)) / 1000);
+            if (diff < 0) return;
 
-            countdown.innerHTML = d + "d " + h + "h " + m + "m " + s + "s ";
+            document.getElementById("days-{{ block.id }}").innerText = Math.floor(diff / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
+            document.getElementById("hours-{{ block.id }}").innerText = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+            document.getElementById("mins-{{ block.id }}").innerText = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+            document.getElementById("secs-{{ block.id }}").innerText = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
+          };
 
-            if (distance < 0) {
-              clearInterval(x);
-              countdown.innerHTML = "EXPIRED";
-            }
-          }, 1000);
+          setInterval(updateTimer, 1000);
+          updateTimer();
         }
       });
   })();
@@ -49,7 +98,7 @@
 
 {% schema %}
 {
-  "name": "Timer Pro",
+  "name": "Flash Sale Pro",
   "target": "section"
 }
 {% endschema %}
