@@ -1,6 +1,8 @@
+readme is AI generated*
+
 # 🚀 TimerPro: AI-Driven Urgency Engine
 
-[cite_start]**TimerPro** is a high-performance Shopify application built using the **MERN stack** and **Shopify CLI 3.0**[cite: 13, 185, 188]. [cite_start]It empowers merchants to drive conversions through intelligent countdown timers, featuring personalized evergreen sessions and AI-generated marketing copy[cite: 10, 16, 53].
+**TimerPro** is a high-performance Shopify application built using the **MERN stack** and **Shopify CLI 3.0**[cite: 13, 185, 188]. [cite_start]It empowers merchants to drive conversions through intelligent countdown timers, featuring personalized evergreen sessions and AI-generated marketing copy[cite: 10, 16, 53].
 
 ---
 
